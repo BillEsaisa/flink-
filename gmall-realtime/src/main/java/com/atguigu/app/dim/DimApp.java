@@ -2,6 +2,7 @@ package com.atguigu.app.dim;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.app.func.TableProcessFunction;
 import com.atguigu.bean.TableProcess;
 import com.atguigu.utils.MyKafkaUtil;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
@@ -18,10 +19,9 @@ import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
-
 public class DimApp {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         //TODO 1.获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -86,10 +86,13 @@ public class DimApp {
         BroadcastConnectedStream<JSONObject, String> connectedStream = jsonObjDS.connect(broadcastStream);
 
         //TODO 7.根据广播流数据处理主流数据
+        SingleOutputStreamOperator<JSONObject> hbaseDS = connectedStream.process(new TableProcessFunction(stateDescriptor));
+        hbaseDS.print(">>>>>>>>");
 
         //TODO 8.将数据写出到Phoenix中
 
         //TODO 9.启动任务
+        env.execute("DimApp");
 
     }
 
