@@ -4,6 +4,7 @@ import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.connectors.kafka.KafkaDeserializationSchema;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -12,11 +13,15 @@ import java.util.Properties;
 
 public class MyKafkaUtil {
 
+    private static Properties properties = new Properties();
+
+    static {
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "hadoop102:9092");
+    }
+
     public static FlinkKafkaConsumer<String> getFlinkKafkaConsumer(String topic, String groupId) {
 
-        Properties properties = new Properties();
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "hadoop102:9092");
 
         return new FlinkKafkaConsumer<String>(
                 topic,
@@ -40,6 +45,12 @@ public class MyKafkaUtil {
                         return BasicTypeInfo.STRING_TYPE_INFO;
                     }
                 },
+                properties);
+    }
+
+    public static FlinkKafkaProducer<String> getFlinkKafkaProducer(String topic) {
+        return new FlinkKafkaProducer<String>(topic,
+                new SimpleStringSchema(),
                 properties);
     }
 
