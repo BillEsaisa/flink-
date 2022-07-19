@@ -2,6 +2,7 @@ package com.atguigu.app.dim;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.app.func.DimSinkFunction;
 import com.atguigu.app.func.TableProcessFunction;
 import com.atguigu.bean.TableProcess;
 import com.atguigu.utils.MyKafkaUtil;
@@ -10,6 +11,7 @@ import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.state.MapStateDescriptor;
+import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.streaming.api.datastream.BroadcastConnectedStream;
 import org.apache.flink.streaming.api.datastream.BroadcastStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -90,6 +92,7 @@ public class DimApp {
         hbaseDS.print(">>>>>>>>");
 
         //TODO 8.将数据写出到Phoenix中
+        hbaseDS.addSink(new DimSinkFunction());
 
         //TODO 9.启动任务
         env.execute("DimApp");
