@@ -91,7 +91,7 @@ public class TableProcessFunction extends BroadcastProcessFunction<JSONObject, S
             sql.append(")").append(sinkExtend);
 
             //打印建表语句
-            System.out.println(sql);
+            System.out.println(">>>>>" + sql);
 
             //编译SQL
             connection = druidDataSource.getConnection();
@@ -139,6 +139,8 @@ public class TableProcessFunction extends BroadcastProcessFunction<JSONObject, S
             //3.补充SinkTable字段写出
             value.put("sinkTable", tableProcess.getSinkTable());
             out.collect(value);
+        } else {
+            System.out.println("未找到对应的配置信息:" + value.getString("table") + ",或者类型错误:" + type);
         }
     }
 

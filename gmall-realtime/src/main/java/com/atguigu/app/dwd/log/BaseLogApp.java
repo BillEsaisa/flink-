@@ -19,6 +19,8 @@ import org.apache.flink.util.Collector;
 
 import org.apache.flink.util.OutputTag;
 
+//数据流：web/app -> nginx -> 日志服务器(File) -> Flume -> Kafka(ODS) -> FlinkApp -> Kafka(DWD)
+//程  序：Mock_log -> Flume(f1.sh) -> Kafka(ZK) -> BaseLogApp -> Kafka(ZK)
 public class BaseLogApp {
 
     public static void main(String[] args) throws Exception {
