@@ -14,9 +14,10 @@ import java.util.Properties;
 public class MyKafkaUtil {
 
     private static Properties properties = new Properties();
+    private static final String KAFKA_SERVER = "hadoop102:9092";
 
     static {
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "hadoop102:9092");
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA_SERVER);
     }
 
     public static FlinkKafkaConsumer<String> getFlinkKafkaConsumer(String topic, String groupId) {
@@ -52,6 +53,38 @@ public class MyKafkaUtil {
         return new FlinkKafkaProducer<String>(topic,
                 new SimpleStringSchema(),
                 properties);
+    }
+
+    public static String getKafkaDDL(String topic, String groupId) {
+        return " WITH ( " +
+                "  'connector' = 'kafka', " +
+                "  'topic' = '" + topic + "', " +
+                "  'properties.bootstrap.servers' = '" + KAFKA_SERVER + "', " +
+                "  'properties.group.id' = '" + groupId + "', " +
+                "  'scan.startup.mode' = 'latest-offset', " +
+                "  'format' = 'json' " +
+                ")";
+    }
+
+    public static String getInsertKafkaDDL(String topic) {
+        return " WITH ( " +
+                "  'connector' = 'kafka', " +
+                "  'topic' = '" + topic + "', " +
+                "  'properties.bootstrap.servers' = '" + KAFKA_SERVER + "', " +
+                "  'format' = 'json' " +
+                ")";
+    }
+
+    public static String getTopicDb(String groupId) {
+        return "CREATE TABLE topic_db ( " +
+                "  `database` STRING, " +
+                "  `table` STRING, " +
+                "  `type` STRING, " +
+                "  `ts` BIGINT, " +
+                "  `data` Map<STRING,STRING>, " +
+                "  `old` Map<STRING,STRING>, " +
+                "  `pt` AS PROCTIME() " +
+                ")" + getKafkaDDL("topic_db", groupId);
     }
 
 }
