@@ -7,6 +7,8 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
+//数据流：web/app -> Nginx -> 业务服务器 -> Mysql(binlog) -> Maxwell -> Kafka(ODS) -> FlinkApp -> Kafka(DWD)
+//程  序：Mock -> Mysql(binlog) -> Maxwell -> Kafka(ZK) -> DwdTradeCartAdd -> Kafka(ZK)
 public class DwdTradeCartAdd {
 
     public static void main(String[] args) throws Exception {
@@ -96,7 +98,7 @@ public class DwdTradeCartAdd {
         tableEnv.createTemporaryView("result_table", resultTable);
 
         //打印测试
-        //tableEnv.toAppendStream(resultTable, Row.class).print();
+        tableEnv.toAppendStream(resultTable, Row.class).print(">>>>>>>");
 
         //TODO 6.构建DWD层加购事实表
         tableEnv.executeSql("" +
@@ -120,7 +122,8 @@ public class DwdTradeCartAdd {
         //TODO 7.写出数据到Kafka
         tableEnv.executeSql("insert into dwd_trade_cart_add select * from result_table");
 
-        //env.execute();
+        //TODO 8.启动任务
+        env.execute("DwdTradeCartAdd");
     }
 
 }

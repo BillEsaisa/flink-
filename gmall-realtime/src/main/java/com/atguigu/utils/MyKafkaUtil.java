@@ -75,6 +75,16 @@ public class MyKafkaUtil {
                 ")";
     }
 
+    public static String getUpsertKafkaDDL(String topic) {
+        return " WITH ( " +
+                "'connector' = 'upsert-kafka', " +
+                "'topic' = '" + topic + "', " +
+                "'properties.bootstrap.servers' = 'hadoop102:9092', " +
+                "'key.format' = 'json', " +
+                "'value.format' = 'json' " +
+                ")";
+    }
+
     public static String getTopicDb(String groupId) {
         return "CREATE TABLE topic_db ( " +
                 "  `database` STRING, " +
