@@ -2,13 +2,15 @@ package com.atguigu.app.dws;
 
 import com.atguigu.app.func.SplitFunction;
 import com.atguigu.bean.KeywordBean;
+import com.atguigu.utils.MyClickHouseUtil;
 import com.atguigu.utils.MyKafkaUtil;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.types.Row;
 
+//数据流：web/app -> nginx -> 日志服务器(File) -> Flume -> Kafka(ODS) -> FlinkApp -> Kafka(DWD) -> FlinkApp -> ClickHouse(DWS)
+//程  序：Mock_log -> Flume(f1.sh) -> Kafka(ZK) -> BaseLogApp -> Kafka(ZK) -> DwsTrafficSourceKeywordPageViewWindow -> ClickHouse(ZK)
 public class DwsTrafficSourceKeywordPageViewWindow {
 
     public static void main(String[] args) throws Exception {
@@ -81,6 +83,7 @@ public class DwsTrafficSourceKeywordPageViewWindow {
         keywordDataStream.print(">>>>>>>>>");
 
         //TODO 7.将数据写出到ClickHouse
+        keywordDataStream.addSink(MyClickHouseUtil.getSinkFunction("insert into dws_traffic_source_keyword_page_view_window values(?,?,?,?,?,?)"));
 
         //TODO 8.启动任务
         env.execute("DwsTrafficSourceKeywordPageViewWindow");
