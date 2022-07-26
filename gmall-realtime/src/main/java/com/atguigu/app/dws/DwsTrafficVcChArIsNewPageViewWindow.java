@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.atguigu.bean.TrafficPageViewBean;
 import com.atguigu.utils.DateFormatUtil;
+import com.atguigu.utils.MyClickHouseUtil;
 import com.atguigu.utils.MyKafkaUtil;
 import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -16,14 +17,22 @@ import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
-import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.util.Collector;
 
 import java.time.Duration;
 
+//数据流：web/app -> nginx -> 日志服务器(File) -> Flume -> Kafka(ODS) -> FlinkApp -> Kafka(DWD) -> FlinkApp -> Kafka(DWD)
+//数据流：web/app -> nginx -> 日志服务器(File) -> Flume -> Kafka(ODS) -> FlinkApp -> Kafka(DWD) -> FlinkApp -> Kafka(DWD)
+//数据流：web/app -> nginx -> 日志服务器(File) -> Flume -> Kafka(ODS) -> FlinkApp -> Kafka(DWD)
+//程  序：Mock_log -> Flume(f1.sh) -> Kafka(ZK) -> BaseLogApp -> Kafka(ZK)
+//程  序：Mock_log -> Flume(f1.sh) -> Kafka(ZK) -> BaseLogApp -> Kafka(ZK) -> DwdTrafficUserJumpDetail -> Kafka(ZK)
+//程  序：Mock_log -> Flume(f1.sh) -> Kafka(ZK) -> BaseLogApp -> Kafka(ZK) -> DwdTrafficUniqueVisitorDetail -> Kafka(ZK)
+
+//=====> FlinkApp -> ClickHouse(DWS)
+//=====> DwsTrafficVcChArIsNewPageViewWindow -> ClickHouse(ZK)
 public class DwsTrafficVcChArIsNewPageViewWindow {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         //TODO 1.获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -49,7 +58,7 @@ public class DwsTrafficVcChArIsNewPageViewWindow {
         String pageTopic = "dwd_traffic_page_log";
         String ujdTopic = "dwd_traffic_user_jump_detail";
         String uvTopic = "dwd_traffic_unique_visitor_detail";
-        String groupId = "page_view_220212";
+        String groupId = "page_view_0212";
         DataStreamSource<String> pageLogDS = env.addSource(MyKafkaUtil.getFlinkKafkaConsumer(pageTopic, groupId));
         DataStreamSource<String> uvLogDS = env.addSource(MyKafkaUtil.getFlinkKafkaConsumer(uvTopic, groupId));
         DataStreamSource<String> ujLogDS = env.addSource(MyKafkaUtil.getFlinkKafkaConsumer(ujdTopic, groupId));
@@ -108,7 +117,7 @@ public class DwsTrafficVcChArIsNewPageViewWindow {
         DataStream<TrafficPageViewBean> unionDS = pageViewWithUjDS.union(pageViewWithPvDS, pageViewWithUvDS);
 
         //TODO 5.提取事件时间生成Watermark
-        SingleOutputStreamOperator<TrafficPageViewBean> pageViewWithWMDS = unionDS.assignTimestampsAndWatermarks(WatermarkStrategy.<TrafficPageViewBean>forBoundedOutOfOrderness(Duration.ofSeconds(2)).withTimestampAssigner(new SerializableTimestampAssigner<TrafficPageViewBean>() {
+        SingleOutputStreamOperator<TrafficPageViewBean> pageViewWithWMDS = unionDS.assignTimestampsAndWatermarks(WatermarkStrategy.<TrafficPageViewBean>forBoundedOutOfOrderness(Duration.ofSeconds(14)).withTimestampAssigner(new SerializableTimestampAssigner<TrafficPageViewBean>() {
             @Override
             public long extractTimestamp(TrafficPageViewBean element, long recordTimestamp) {
                 return element.getTs();
@@ -169,10 +178,12 @@ public class DwsTrafficVcChArIsNewPageViewWindow {
             }
         });
 
-
         //TODO 7.将数据写出到ClickHouse
+        resultDS.print("resultDS>>>>");
+        resultDS.addSink(MyClickHouseUtil.getSinkFunction("insert into dws_traffic_vc_ch_ar_is_new_page_view_window values(?,?,?,?,?,?,?,?,?,?,?,?)"));
 
         //TODO 8.启动任务
+        env.execute("DwsTrafficVcChArIsNewPageViewWindow");
 
     }
 
