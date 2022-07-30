@@ -9,6 +9,7 @@ import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.configuration.Configuration;
@@ -168,7 +169,25 @@ public class DwsTradeSkuOrderWindow {
         //打印测试
         reduceDS.print("reduceDS>>>>>>>>>>");
 
-        //TODO 8.关联维表补充维度信息
+        //TODO 8.关联维表补充维度信息  SKU  SPU  TM  Category3  Category2  Category1
+        reduceDS.map(new RichMapFunction<TradeSkuOrderBean, TradeSkuOrderBean>() {
+            @Override
+            public void open(Configuration parameters) throws Exception {
+
+            }
+
+            @Override
+            public TradeSkuOrderBean map(TradeSkuOrderBean value) throws Exception {
+                //通过sku_id查询补充信息
+                //通过spu_id查询补充信息
+                //通过tm_id查询补充信息
+                //通过Category3查询补充信息
+                //通过Category2查询、补充信息
+                //通过Category1查询补充信息
+
+                return null;
+            }
+        });
 
         //TODO 9.将数据写出到ClickHouse
 
