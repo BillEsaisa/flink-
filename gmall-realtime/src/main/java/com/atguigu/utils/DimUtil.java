@@ -40,6 +40,11 @@ public class DimUtil {
         return dimInfo;
     }
 
+    public static void delDimInfo(Jedis jedis, String tableName, String key) {
+        String redisKey = "DIM:" + tableName + ":" + key;
+        jedis.del(redisKey);
+    }
+
     public static void main(String[] args) throws Exception {
 
         DruidDataSource dataSource = DruidDSUtil.createDataSource();
