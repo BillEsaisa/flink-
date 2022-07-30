@@ -2,6 +2,7 @@ package com.atguigu.app.dws;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.app.func.DimAsyncFunction;
 import com.atguigu.bean.TradeSkuOrderBean;
 import com.atguigu.utils.DateFormatUtil;
 import com.atguigu.utils.MyKafkaUtil;
@@ -14,6 +15,7 @@ import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.TimerService;
+import org.apache.flink.streaming.api.datastream.AsyncDataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -27,6 +29,7 @@ import org.apache.flink.util.Collector;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 
 public class DwsTradeSkuOrderWindow {
 
@@ -170,24 +173,63 @@ public class DwsTradeSkuOrderWindow {
         reduceDS.print("reduceDS>>>>>>>>>>");
 
         //TODO 8.关联维表补充维度信息  SKU  SPU  TM  Category3  Category2  Category1
-        reduceDS.map(new RichMapFunction<TradeSkuOrderBean, TradeSkuOrderBean>() {
-            @Override
-            public void open(Configuration parameters) throws Exception {
+//        reduceDS.map(new RichMapFunction<TradeSkuOrderBean, TradeSkuOrderBean>() {
+//            @Override
+//            public void open(Configuration parameters) throws Exception {
+//            }
+//            @Override
+//            public TradeSkuOrderBean map(TradeSkuOrderBean value) throws Exception {
+//                //通过sku_id查询补充信息
+//                //通过spu_id查询补充信息
+//                //通过tm_id查询补充信息
+//                //通过Category3查询补充信息
+//                //通过Category2查询、补充信息
+//                //通过Category1查询补充信息
+//                return null;
+//            }
+//        });
 
-            }
+        //8.1 关联sku_info
+        SingleOutputStreamOperator<TradeSkuOrderBean> tradeSkuOrderWithSkuDS = AsyncDataStream.unorderedWait(
+                reduceDS,
+                new DimAsyncFunction<TradeSkuOrderBean>("DIM_SKU_INFO") {
+                    @Override
+                    public String getKey(TradeSkuOrderBean input) {
+                        return input.getSkuId();
+                    }
 
-            @Override
-            public TradeSkuOrderBean map(TradeSkuOrderBean value) throws Exception {
-                //通过sku_id查询补充信息
-                //通过spu_id查询补充信息
-                //通过tm_id查询补充信息
-                //通过Category3查询补充信息
-                //通过Category2查询、补充信息
-                //通过Category1查询补充信息
+                    @Override
+                    public void join(TradeSkuOrderBean input, JSONObject dimInfo) {
+                        input.setCategory3Id(dimInfo.getString("CATEGORY3_ID"));
+                        input.setTrademarkId(dimInfo.getString("TM_ID"));
+                        input.setSpuId(dimInfo.getString("SPU_ID"));
+                    }
+                },
+                100, TimeUnit.SECONDS);
 
-                return null;
-            }
-        });
+        //8.2 关联spu_info
+        AsyncDataStream.unorderedWait(
+                tradeSkuOrderWithSkuDS,
+                new DimAsyncFunction<TradeSkuOrderBean>("DIM_SPU_INFO") {
+                    @Override
+                    public String getKey(TradeSkuOrderBean input) {
+                        return input.getSpuId();
+                    }
+
+                    @Override
+                    public void join(TradeSkuOrderBean input, JSONObject dimInfo) {
+                        input.setSpuName(dimInfo.getString("SPU_NAME"));
+                    }
+                },
+                100, TimeUnit.SECONDS);
+
+        //8.3 关联base_trademark
+
+        //8.4 关联category3
+
+        //8.5 关联category2
+
+        //8.6 关联category1
 
         //TODO 9.将数据写出到ClickHouse
 
