@@ -70,6 +70,6 @@ public abstract class DimAsyncFunction<T> extends RichAsyncFunction<T, T> implem
 
     @Override
     public void timeout(T input, ResultFuture<T> resultFuture) throws Exception {
-        System.out.println("TimeOut:" + input);
+        System.out.println("TimeOut>>>>>>>>>>>" + input);
     }
 }
