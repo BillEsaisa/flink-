@@ -1,6 +1,6 @@
 package com.atguigu.gmallpublisher.controller;
 
-import com.atguigu.gmallpublisher.service.SugarService;
+import com.atguigu.gmallpublisher.service.impl.SugarService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,22 +18,8 @@ import java.util.Set;
 public class SugarController {
 
     @Autowired
-    private SugarService sugarService;
+private SugarService sugarService;
 
-    @RequestMapping("test")
-    //@ResponseBody
-    public String test1() {
-        System.out.println("aaaaaaaaaaaaaaaaa");
-        return "success";
-        //return "index.html";
-    }
-
-    @RequestMapping("test2")
-    public String test2(@RequestParam("name") String nn,
-                        @RequestParam(value = "age", defaultValue = "18") int age) {
-        System.out.println(nn + ":" + age);
-        return "success";
-    }
 
     @RequestMapping("gmv")
     public String getGmv(@RequestParam(value = "date", defaultValue = "0") int date) {
